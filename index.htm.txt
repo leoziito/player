@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reprodutor de Vídeo Simples</title>
+    <!-- Carrega o Tailwind CSS para estilização -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Define a fonte Inter como principal */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Cinza claro de fundo */
+        }
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+        }
+        /* Estilos específicos para o player de vídeo */
+        #videoPlayer {
+            width: 100%;
+            max-height: 80vh; /* Limita a altura para telas menores */
+            border-radius: 0.75rem; /* rounded-xl */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            background-color: #000;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container p-4">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-8">Reprodutor de Vídeo</h1>
+
+        <!-- Seção de Entrada de Link (Formulário) -->
+        <div id="inputSection" class="bg-white p-6 md:p-10 rounded-xl shadow-lg transition duration-300">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Insira o Link do Vídeo (MP4, WebM, etc.)</h2>
+            <div class="space-y-4">
+                <!-- Campo de Input -->
+                <input type="url" id="videoUrlInput" placeholder="Ex: https://seusite.com/video.mp4"
+                       class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150" required>
+                
+                <!-- Botão de Confirmação -->
+                <button id="playButton"
+                        class="w-full bg-blue-600 text-white font-medium py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-200 shadow-md transform hover:scale-[1.01] active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-blue-300">
+                    Abrir Vídeo
+                </button>
+            </div>
+            
+            <!-- Mensagem de Erro/Status -->
+            <p id="messageArea" class="mt-4 text-sm text-red-600 hidden"></p>
+        </div>
+
+        <!-- Seção do Player de Vídeo (Inicialmente Oculta) -->
+        <div id="playerSection" class="hidden mt-8">
+            <!-- Botão para Voltar -->
+            <button id="backButton"
+                    class="mb-4 inline-flex items-center text-blue-600 hover:text-blue-800 transition duration-150">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+                </svg>
+                Voltar
+            </button>
+            
+            <!-- Elemento de Vídeo -->
+            <video id="videoPlayer" controls autoplay preload="auto">
+                Seu navegador não suporta a tag de vídeo.
+            </video>
+        </div>
+    </div>
+
+    <script>
+        // Variáveis globais para os elementos do DOM
+        const inputSection = document.getElementById('inputSection');
+        const playerSection = document.getElementById('playerSection');
+        const videoUrlInput = document.getElementById('videoUrlInput');
+        const playButton = document.getElementById('playButton');
+        const backButton = document.getElementById('backButton');
+        const videoPlayer = document.getElementById('videoPlayer');
+        const messageArea = document.getElementById('messageArea');
+
+        /**
+         * Lida com o clique do botão "Abrir Vídeo".
+         */
+        playButton.addEventListener('click', () => {
+            const url = videoUrlInput.value.trim();
+
+            // 1. Validação básica da URL
+            if (!url) {
+                showMessage("Por favor, insira um link de vídeo válido.");
+                return;
+            }
+
+            // Oculta mensagens de erro anteriores
+            hideMessage();
+
+            // 2. Tenta carregar o vídeo
+            videoPlayer.src = url;
+
+            // 3. Adiciona um listener para tratar erros de carregamento
+            videoPlayer.onerror = (e) => {
+                console.error("Erro ao carregar o vídeo:", e);
+                showMessage("Erro ao carregar o vídeo. Verifique se o link está correto e se o formato é suportado pelo navegador.");
+                videoPlayer.src = ''; // Limpa o src para evitar novas tentativas
+                // Volta para a seção de input se houver erro
+                inputSection.classList.remove('hidden');
+                playerSection.classList.add('hidden');
+            };
+
+            // 4. Se a URL for definida, muda para a seção do player
+            inputSection.classList.add('hidden');
+            playerSection.classList.remove('hidden');
+            
+            // Tenta dar play automaticamente (pode ser bloqueado pelo navegador)
+            videoPlayer.play().catch(error => {
+                // Captura erro se o autoplay for bloqueado
+                console.warn("Autoplay bloqueado. O usuário deve clicar em play.");
+                // O vídeo ainda estará pronto para ser reproduzido pelo usuário
+            });
+        });
+
+        /**
+         * Lida com o clique do botão "Voltar".
+         */
+        backButton.addEventListener('click', () => {
+            // Pausa e reseta o vídeo
+            videoPlayer.pause();
+            videoPlayer.src = '';
+            
+            // Limpa o input
+            videoUrlInput.value = '';
+
+            // Alterna a visibilidade das seções
+            playerSection.classList.add('hidden');
+            inputSection.classList.remove('hidden');
+            hideMessage();
+        });
+
+        /**
+         * Exibe uma mensagem de erro na tela.
+         * @param {string} message - A mensagem a ser exibida.
+         */
+        function showMessage(message) {
+            messageArea.textContent = message;
+            messageArea.classList.remove('hidden');
+        }
+
+        /**
+         * Oculta a área de mensagens.
+         */
+        function hideMessage() {
+            messageArea.classList.add('hidden');
+            messageArea.textContent = '';
+        }
+    </script>
+
+</body>
+</html>
